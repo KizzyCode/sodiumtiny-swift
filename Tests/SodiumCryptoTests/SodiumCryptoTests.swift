@@ -10,7 +10,7 @@ final class SodiumCryptoTests: XCTestCase {
     /// Tests the `AeadXchachaPoly` implementation
     func testAeadXchachPoly() throws {
         // Generate an AEAD instance
-        let key = SecureBytes(random: 32), box = try AeadXchachaPoly(key: key)
+        let key = SecureBytes(random: 32), aead = try AeadXchachaPoly(key: key)
         
         // Perform some random tests
         for _ in 0 ..< 16_384 {
@@ -18,8 +18,8 @@ final class SodiumCryptoTests: XCTestCase {
             let message = SecureBytes(random: 1027), ad = SecureBytes(random: 1024), nonce = SecureBytes(random: 24)
             
             // Encrypt and decrypt message
-            let ciphertext = try box.seal(plaintext: message, ad: ad, nonce: nonce),
-                plaintext = try box.open(ciphertext: ciphertext, ad: ad, nonce: nonce)
+            let ciphertext = try aead.seal(plaintext: message, ad: ad, nonce: nonce),
+                plaintext = try aead.open(ciphertext: ciphertext, ad: ad, nonce: nonce)
             XCTAssertEqual(
                 message.withUnsafeBytes({ [UInt8]($0) }),
                 plaintext.withUnsafeBytes({ [UInt8]($0) }))
@@ -30,7 +30,7 @@ final class SodiumCryptoTests: XCTestCase {
     func testAeadXchachPolyCompare() throws {
         // Generate an AEAD instance
         let key = SecureBytes(random: 32), sodiumKey = key.withUnsafeBytes({ [UInt8]($0) }),
-            box = try AeadXchachaPoly(key: key), sodiumBox = Sodium().aead.xchacha20poly1305ietf
+            aead = try AeadXchachaPoly(key: key), sodiumAead = Sodium().aead.xchacha20poly1305ietf
         
         // Test sealing against libsodium
         for _ in 0 ..< 16_384 {
@@ -39,12 +39,12 @@ final class SodiumCryptoTests: XCTestCase {
                 nonce = SecureBytes(random: 24), sodiumNonce = nonce.withUnsafeBytes({ [UInt8]($0) })
             
             // Seal and split the message
-            let ciphertext = try box.seal(plaintext: message, nonce: nonce),
+            let ciphertext = try aead.seal(plaintext: message, nonce: nonce),
                 sodiumCiphertext = ciphertext.withUnsafeBytes({ [UInt8]($0) })
                 
             // Reopen the ciphertext
-            let plaintext = sodiumBox.decrypt(authenticatedCipherText: sodiumCiphertext, secretKey: sodiumKey,
-                                              nonce: sodiumNonce)
+            let plaintext = sodiumAead.decrypt(authenticatedCipherText: sodiumCiphertext, secretKey: sodiumKey,
+                                               nonce: sodiumNonce)
             XCTAssertEqual(
                 message.withUnsafeBytes({ [UInt8]($0) }),
                 plaintext)
@@ -55,39 +55,39 @@ final class SodiumCryptoTests: XCTestCase {
     func testAeadXchachPolyError() throws {
         // Generate an AEAD instance
         let key = SecureBytes(random: 32)
-        let box = try AeadXchachaPoly(key: key)
+        let aead = try AeadXchachaPoly(key: key)
         
         // Create a random sealed message
         let ad = SecureBytes(random: 1024)
         let nonce = SecureBytes(random: 24)
-        let ciphertext = try box.seal(plaintext: SecureBytes(random: 1027), ad: ad, nonce: nonce)
+        let ciphertext = try aead.seal(plaintext: SecureBytes(random: 1027), ad: ad, nonce: nonce)
         
         // Modify the ciphertext
         do {
             var ciphertext = Data(ciphertext)
             ciphertext[7] = ~ciphertext[7]
-            XCTAssertThrowsError(try box.open(ciphertext: ciphertext, ad: ad, nonce: nonce))
+            XCTAssertThrowsError(try aead.open(ciphertext: ciphertext, ad: ad, nonce: nonce))
         }
         
         // Modify the ciphertext tag
         do {
             var ciphertext = Data(ciphertext)
             ciphertext.append(~ciphertext.popLast()!)
-            XCTAssertThrowsError(try box.open(ciphertext: ciphertext, ad: ad, nonce: nonce))
+            XCTAssertThrowsError(try aead.open(ciphertext: ciphertext, ad: ad, nonce: nonce))
         }
         
         // Modify the associated data
         do {
             var ad = ad.withUnsafeBytes({ Data($0) })
             ad[7] = ~ad[7]
-            XCTAssertThrowsError(try box.open(ciphertext: ciphertext, ad: ad, nonce: nonce))
+            XCTAssertThrowsError(try aead.open(ciphertext: ciphertext, ad: ad, nonce: nonce))
         }
         
         // Modify the nonce
         do {
             var nonce = nonce.withUnsafeBytes({ Data($0) })
             nonce[7] = ~nonce[7]
-            XCTAssertThrowsError(try box.open(ciphertext: ciphertext, ad: ad, nonce: nonce))
+            XCTAssertThrowsError(try aead.open(ciphertext: ciphertext, ad: ad, nonce: nonce))
         }
     }
     

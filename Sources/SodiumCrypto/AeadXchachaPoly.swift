@@ -42,15 +42,16 @@ public struct AeadXchachaPoly {
         var outputCount: UInt64 = 0
         
         // Seal the message
-        try self.key.withUnsafeBytes({ key, _ in
-            try nonce.withUnsafeBytes({ nonce, _ in
-                try plaintext.withUnsafeBytes({ plaintext, plaintextCount in
-                    try ad.withUnsafeBytes({ ad, adCount in
+        try nonce.withUnsafeBytes({ nonce, _ in
+            try plaintext.withUnsafeBytes({ plaintext, plaintextCount in
+                try ad.withUnsafeBytes({ ad, adCount in
+                    try self.key.withUnsafeBytes({ key, _ in
                         try output.withUnsafeMutableBytes({ output, _ in
-                            let result = crypto_aead_xchacha20poly1305_ietf_encrypt(output, &outputCount,
-                                                                                    plaintext, UInt64(plaintextCount),
-                                                                                    ad, UInt64(adCount),
-                                                                                    nil, nonce, key)
+                            // Encrypt the data
+                            let result = crypto_aead_xchacha20poly1305_ietf_encrypt(
+                                output, &outputCount,
+                                plaintext, UInt64(plaintextCount), ad, UInt64(adCount),
+                                nil, nonce, key)
                             try ReturnCode.ok.validate(code: result)
                         })
                     })
@@ -76,14 +77,16 @@ public struct AeadXchachaPoly {
         var outputCount: UInt64 = 0
         
         // Open the message
-        try self.key.withUnsafeBytes({ key, _ in
-            try nonce.withUnsafeBytes({ nonce, _ in
-                try ciphertext.withUnsafeBytes({ ciphertext, ciphertextCount in
-                    try ad.withUnsafeBytes({ ad, adCount in
+        try nonce.withUnsafeBytes({ nonce, _ in
+            try ciphertext.withUnsafeBytes({ ciphertext, ciphertextCount in
+                try ad.withUnsafeBytes({ ad, adCount in
+                    try self.key.withUnsafeBytes({ key, _ in
                         try output.withUnsafeMutableBytes({ output, _ in
-                            let result = crypto_aead_xchacha20poly1305_ietf_decrypt(output, &outputCount, nil,
-                                                                                    ciphertext, UInt64(ciphertextCount),
-                                                                                    ad, UInt64(adCount), nonce, key)
+                            // Decrypt the data
+                            let result = crypto_aead_xchacha20poly1305_ietf_decrypt(
+                                output, &outputCount, nil,
+                                ciphertext, UInt64(ciphertextCount), ad, UInt64(adCount),
+                                nonce, key)
                             try ReturnCode.ok.validate(code: result)
                         })
                     })

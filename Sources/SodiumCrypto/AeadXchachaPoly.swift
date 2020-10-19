@@ -33,7 +33,8 @@ public struct AeadXchachaPoly {
     ///     - nonce: The nonce to use
     ///
     ///  - Returns: The sealed box
-    public func seal(plaintext: Bytes, ad: Bytes = "", nonce: Bytes) throws -> Data {
+    public func seal(plaintext: SecureContiguousBytes, ad: SecureContiguousBytes = "",
+                     nonce: SecureContiguousBytes) throws -> Data {
         // Validate input
         try Self.nonceSize.validate(value: nonce.count)
         
@@ -68,7 +69,8 @@ public struct AeadXchachaPoly {
     ///     - nonce: The nonce to use
     ///
     ///  - Returns: The opened message
-    public func open(ciphertext: Bytes, ad: Bytes = "", nonce: Bytes) throws -> SecureBytes {
+    public func open(ciphertext: SecureContiguousBytes, ad: SecureContiguousBytes = "",
+                     nonce: SecureContiguousBytes) throws -> SecureBytes {
         // Validate input
         try Self.nonceSize.validate(value: nonce.count)
         

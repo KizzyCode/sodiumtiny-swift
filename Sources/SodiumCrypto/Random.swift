@@ -18,7 +18,7 @@ public struct Random {
     /// Writes some cryptographically secure random bytes into a buffer
     ///
     ///  - Parameter buffer: The buffer to write the bytes to
-    public func generate<T: MutableBytes>(into buffer: inout T) {
+    public func generate<T: MutableSecureContiguousBytes>(into buffer: inout T) {
         buffer.withUnsafeMutableBytes({ self.generate(into: $0) })
     }
     

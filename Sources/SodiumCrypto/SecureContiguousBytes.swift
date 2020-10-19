@@ -3,14 +3,8 @@ import Clibsodium
 
 
 /// A byte object
-public protocol Bytes {
-    /// Accesses the underlying raw bytes
-    ///
-    ///  - Parameter body: The accessor for the underlying raw buffer pointer
-    ///  - Returns: The result of `body`
-    func withUnsafeBytes<R>(_ body: (UnsafeRawBufferPointer) throws -> R) rethrows -> R
-}
-public extension Bytes {
+public protocol SecureContiguousBytes: ContiguousBytes {}
+public extension SecureContiguousBytes {
     /// The amount of bytes in `self`
     var count: Int {
         self.withUnsafeBytes({ $0.count })
@@ -27,16 +21,16 @@ public extension Bytes {
         })
     }
 }
-extension UnsafeRawBufferPointer: Bytes {}
-extension UnsafeMutableRawBufferPointer: Bytes {}
-extension Data: Bytes {}
-extension Array: Bytes where Element == UInt8 {}
-extension String: Bytes {
+extension UnsafeRawBufferPointer: SecureContiguousBytes {}
+extension UnsafeMutableRawBufferPointer: SecureContiguousBytes {}
+extension Data: SecureContiguousBytes {}
+extension Array: SecureContiguousBytes where Element == UInt8 {}
+extension String: SecureContiguousBytes {
     public func withUnsafeBytes<R>(_ body: (UnsafeRawBufferPointer) throws -> R) rethrows -> R {
         try self.data(using: .utf8)!.withUnsafeBytes(body)
     }
 }
-extension UInt64: Bytes {
+extension UInt64: SecureContiguousBytes {
     /// Access the underlying bytes in their **big-endian** representation
     ///
     ///  - Parameter body: The accessor for the underlying raw buffer pointer
@@ -47,7 +41,7 @@ extension UInt64: Bytes {
 
 
 /// A mutable byte object
-public protocol MutableBytes: Bytes {
+public protocol MutableSecureContiguousBytes: SecureContiguousBytes {
     /// Accesses the underlying raw bytes
     ///
     ///  - Parameter body: The accessor that gets the pointer and the size of the underlying bytes
@@ -57,7 +51,7 @@ public protocol MutableBytes: Bytes {
     /// Securely overwrites self with zero bytes
     mutating func erase()
 }
-public extension MutableBytes {
+public extension MutableSecureContiguousBytes {
     /// Accesses the underlying raw bytes
     ///
     ///  - Parameter body: The accessor that gets the pointer and the size of the underlying bytes
@@ -74,7 +68,7 @@ public extension MutableBytes {
         })
     }
 }
-extension UnsafeMutableRawBufferPointer: MutableBytes {
+extension UnsafeMutableRawBufferPointer: MutableSecureContiguousBytes {
     public mutating func withUnsafeMutableBytes<R>(_ body: (UnsafeMutableRawBufferPointer) throws -> R) rethrows -> R {
         try body(self)
     }
@@ -82,12 +76,12 @@ extension UnsafeMutableRawBufferPointer: MutableBytes {
         sodium_memzero(self.baseAddress!, self.count)
     }
 }
-extension Array: MutableBytes where Element == UInt8 {
+extension Array: MutableSecureContiguousBytes where Element == UInt8 {
     public mutating func erase() {
         self.withUnsafeMutableBytes({ $0.erase() })
     }
 }
-extension Data: MutableBytes {
+extension Data: MutableSecureContiguousBytes {
     public mutating func erase() {
         self.withUnsafeMutableBytes({ $0.erase() })
     }

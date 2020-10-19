@@ -127,7 +127,7 @@ public class SecureBytes: Codable {
     /// Creates a new secure memory object by copying the passed bytes
     ///
     ///  - Parameter bytes: The bytes to copy
-    public required init(copying bytes: Bytes) {
+    public required init(copying bytes: SecureContiguousBytes) {
         self.memory = SodiumMemory(count: bytes.count)
         self.memory.write({ memory in
             bytes.withUnsafeBytes({ memory.copyBytes(from: $0) })
@@ -136,7 +136,7 @@ public class SecureBytes: Codable {
     /// Creates a new secure memory object by copying and erasing the passed bytes
     ///
     ///  - Parameter bytes: The bytes that will be copied and erased
-    public convenience init<T: MutableBytes>(erasing bytes: inout T) {
+    public convenience init<T: MutableSecureContiguousBytes>(erasing bytes: inout T) {
         defer { bytes.erase() }
         self.init(copying: bytes)
     }
@@ -158,7 +158,7 @@ public class SecureBytes: Codable {
         try data.encode(to: encoder)
     }
 }
-extension SecureBytes: Bytes {
+extension SecureBytes: SecureContiguousBytes {
     public func withUnsafeBytes<R>(_ body: (UnsafeRawBufferPointer) throws -> R) rethrows -> R {
         try self.memory.read(body)
     }
@@ -184,7 +184,7 @@ public class MutableSecureBytes: SecureBytes {
         self.memory = new
     }
 }
-extension MutableSecureBytes: MutableBytes {
+extension MutableSecureBytes: MutableSecureContiguousBytes {
     public func withUnsafeMutableBytes<R>(_ body: (UnsafeMutableRawBufferPointer) throws -> R) rethrows -> R {
         try self.memory.write(body)
     }

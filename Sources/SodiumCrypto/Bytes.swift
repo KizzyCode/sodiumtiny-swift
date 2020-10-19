@@ -78,17 +78,17 @@ extension UnsafeMutableRawBufferPointer: MutableBytes {
     public mutating func withUnsafeMutableBytes<R>(_ body: (UnsafeMutableRawBufferPointer) throws -> R) rethrows -> R {
         try body(self)
     }
-    public mutating func erase() {
+    public func erase() {
         sodium_memzero(self.baseAddress!, self.count)
     }
 }
 extension Array: MutableBytes where Element == UInt8 {
     public mutating func erase() {
-        self.withUnsafeMutableBytes({ sodium_memzero($0.baseAddress!, $0.count) })
+        self.withUnsafeMutableBytes({ $0.erase() })
     }
 }
 extension Data: MutableBytes {
     public mutating func erase() {
-        self.withUnsafeMutableBytes({ sodium_memzero($0.baseAddress!, $0.count) })
+        self.withUnsafeMutableBytes({ $0.erase() })
     }
 }

@@ -30,9 +30,6 @@ public struct HkdfSha512 {
     ///     - salt: A salt to randomize the output if appropriate
     ///     - context: Some context specific parameters; i.e. an app identifier etc.
     ///     - outputCount: The size of the subkey to derive
-    ///
-    ///  - Discussion: Because the default Blake2b-KDF only allows 16 byte `salts` and `contexts`, we instead use the
-    ///    HKDF construction with a keyed Blake2b-hash as PRF instead of SHA2-HMAC.
     public func derive(salt: Bytes = "", context: Bytes, outputCount: Int = 32) throws -> SecureBytes {
         // Validate the input
         try Self.outputSize.validate(value: outputCount)

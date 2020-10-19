@@ -117,14 +117,13 @@ public class SecureBytes: Codable {
         self.memory = SodiumMemory(count: count)
         self.memory.write({ sodium_memzero($0.baseAddress, $0.count) })
     }
-    /// Creates a new secure memory object filled with cryptographically secure random bytes
+    /// Generates some secure bytes filled with cryptographically secure random bytes
     ///
     ///  - Parameter count: The amount of random bytes to generate
     public required init(random count: Int) {
         self.memory = SodiumMemory(count: count)
-        self.memory.write({ randombytes_buf($0.baseAddress!, $0.count) })
+        self.memory.write({ Random().generate(into: $0) })
     }
-    
     /// Creates a new secure memory object by copying the passed bytes
     ///
     ///  - Parameter bytes: The bytes to copy

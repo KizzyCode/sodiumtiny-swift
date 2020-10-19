@@ -151,11 +151,29 @@ final class SodiumCryptoTests: XCTestCase {
         XCTAssertEqual(context.withUnsafeBytes({ [UInt8]($0) }), expected)
     }
     
+    
+    /// A rudimentary test the random number generator
+    func testRand() {
+        // Create the RNG
+        let random = Random()
+        
+        // Fill buffers with random bytes
+        var buffers: [Data] = []
+        for _ in 0..<16_384 {
+            buffers.append(random.generate(data: 16_384))
+        }
+        
+        // Deduplicate
+        let deduplicated = Set(buffers)
+        XCTAssertEqual(deduplicated.count, buffers.count)
+    }
+    
     static var allTests = [
         ("testAeadXchachPoly", testAeadXchachPoly),
         ("testAeadXchachPolyCompare", testAeadXchachPolyCompare),
         ("testAeadXchachPolyError", testAeadXchachPolyError),
         ("testHkdfSha512", testHkdfSha512),
-        ("testHkdfSha512Compare", testHkdfSha512Compare)
+        ("testHkdfSha512Compare", testHkdfSha512Compare),
+        ("testRand", testRand)
     ]
 }

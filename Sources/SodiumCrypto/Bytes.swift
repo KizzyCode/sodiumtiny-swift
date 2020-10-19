@@ -27,6 +27,8 @@ public extension Bytes {
         })
     }
 }
+extension UnsafeRawBufferPointer: Bytes {}
+extension UnsafeMutableRawBufferPointer: Bytes {}
 extension Data: Bytes {}
 extension Array: Bytes where Element == UInt8 {}
 extension String: Bytes {
@@ -70,6 +72,19 @@ public extension MutableBytes {
             let pointer = $0.baseAddress!.bindMemory(to: UInt8.self, capacity: self.count)
             return try body(pointer, $0.count)
         })
+    }
+}
+extension UnsafeMutableRawBufferPointer: MutableBytes {
+    public mutating func withUnsafeMutableBytes<R>(_ body: (UnsafeMutableRawBufferPointer) throws -> R) rethrows -> R {
+        try body(self)
+    }
+    public mutating func erase() {
+        sodium_memzero(self.baseAddress!, self.count)
+    }
+}
+extension Array: MutableBytes where Element == UInt8 {
+    public mutating func erase() {
+        self.withUnsafeMutableBytes({ sodium_memzero($0.baseAddress!, $0.count) })
     }
 }
 extension Data: MutableBytes {

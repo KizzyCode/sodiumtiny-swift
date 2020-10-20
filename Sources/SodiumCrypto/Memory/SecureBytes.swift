@@ -14,30 +14,30 @@ public struct SecureBytes {
     /// Creates a new all-zero secure memory object
     ///
     ///  - Parameter count: The amount of zero bytes
-    public init(zero count: Int = 0) {
-        self.memory = SodiumMemory(count: count)
+    public init(zero count: Int = 0) throws {
+        self.memory = try SodiumMemory(count: count)
         self.erase()
     }
     /// Generates some secure bytes filled with cryptographically secure random bytes
     ///
     ///  - Parameter count: The amount of random bytes to generate
-    public init(random count: Int) {
-        self.memory = SodiumMemory(count: count)
+    public init(random count: Int) throws {
+        self.memory = try SodiumMemory(count: count)
         self.memory.write({ Random().generate(into: $0) })
     }
     /// Creates a new secure memory object by copying the passed bytes
     ///
     ///  - Parameter bytes: The bytes to copy
-    public init<D: DataProtocol>(copying bytes: D) {
-        self.memory = SodiumMemory(count: bytes.count)
+    public init<D: DataProtocol>(copying bytes: D) throws {
+        self.memory = try SodiumMemory(count: bytes.count)
         self.memory.write({ $0.copyBytes(from: bytes) })
     }
     /// Creates a new secure memory object by copying and erasing the passed bytes
     ///
     ///  - Parameter bytes: The bytes that will be copied and erased
-    public init<D: DataProtocol & MutableContiguousBytes>(erasing bytes: inout D) {
+    public init<D: DataProtocol & MutableContiguousBytes>(erasing bytes: inout D) throws {
         defer { bytes.erase() }
-        self.init(copying: bytes)
+        try self.init(copying: bytes)
     }
     
     /// Resizes self
@@ -45,9 +45,9 @@ public struct SecureBytes {
     ///  - Parameters:
     ///     - count: The new size
     ///     - value: The value to initialize new elements with if the new size is greater than the current size
-    public mutating func resize(to count: Int, value: UInt8 = 0) {
+    public mutating func resize(to count: Int, value: UInt8 = 0) throws {
         // Allocate and initialize the new buffer
-        let new = SodiumMemory(count: count)
+        let new = try SodiumMemory(count: count)
         new.write({ _ = $0.initializeMemory(as: UInt8.self, repeating: value) })
         
         // Copy the old data and update self
@@ -67,7 +67,7 @@ extension SecureBytes: ContiguousBytes, MutableContiguousBytes {
 }
 extension SecureBytes: MutableDataProtocol {
     public init() {
-        self.init(zero: 0)
+        try! self.init(zero: 0)
     }
     
     public typealias Regions = CollectionOfOne<SecureBytes>
@@ -90,7 +90,7 @@ extension SecureBytes: Codable {
         defer { data.erase() }
         
         // Allocate the memory
-        self.memory = SodiumMemory(count: data.count)
+        self.memory = try SodiumMemory(count: data.count)
         self.memory.write({ _ = data.copyBytes(to: $0) })
     }
     public func encode(to encoder: Encoder) throws {
@@ -111,28 +111,28 @@ public struct Key {
     /// The underlying key bytes
     public let bytes: SecureBytes
     
-    /// Creates a new cryptographically secure random key
-    ///
-    ///  - Parameter count: The amount of key bytes to generate
-    public init(random count: Int = 32) {
-        self.bytes = SecureBytes(random: count)
-    }
     /// Creates a new key by wrapping the passed bytes
     ///
     ///  - Parameter bytes: The key bytes to wrap
     public init(wrapping bytes: SecureBytes) {
         self.bytes = bytes
     }
+    /// Creates a new cryptographically secure random key
+    ///
+    ///  - Parameter count: The amount of key bytes to generate
+    public init(random count: Int = 32) throws {
+        self.bytes = try SecureBytes(random: count)
+    }
     /// Creates a new key by copying the passed bytes
     ///
     ///  - Parameter bytes: The key bytes to copy
-    public init<D: DataProtocol>(copying bytes: D) {
-        self.bytes = SecureBytes(copying: bytes)
+    public init<D: DataProtocol>(copying bytes: D) throws {
+        self.bytes = try SecureBytes(copying: bytes)
     }
     /// Creates a new key by copying and erasing the passed bytes
     ///
     ///  - Parameter bytes: The bytes that will be copied and erased
-    public init<D: DataProtocol & MutableContiguousBytes>(erasing bytes: inout D) {
-        self.bytes = SecureBytes(erasing: &bytes)
+    public init<D: DataProtocol & MutableContiguousBytes>(erasing bytes: inout D) throws {
+        self.bytes = try SecureBytes(erasing: &bytes)
     }
 }

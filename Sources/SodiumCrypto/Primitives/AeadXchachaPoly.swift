@@ -76,7 +76,7 @@ public struct AeadXchachaPoly {
         try Self.nonceSize.validate(value: nonce.count)
         
         // Prepare vars
-        var output = SecureBytes(zero: ciphertext.count),
+        var output = try SecureBytes(zero: ciphertext.count),
             outputCount: UInt64 = 0
         
         // Open the message
@@ -98,7 +98,7 @@ public struct AeadXchachaPoly {
         })
         
         // Trim and return output
-        output.resize(to: Int(exactly: outputCount)!)
+        try output.resize(to: Int(exactly: outputCount)!)
         return output
     }
 }

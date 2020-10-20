@@ -7,6 +7,8 @@ public enum SodiumCryptoError: Error {
     case rangeViolation(value: Int, expected: Range<Int>, file: String = #file, line: Int = #line)
     /// A cryptographic error occurred (i.e. libsodium returned a non-zero return code)
     case cryptoError(returnCode: Int32, expected: Int32, file: String = #file, line: Int = #line)
+    /// Failed to allocate secure protected memory
+    case allocationError(count: Int, file: String = #file, line: Int = #line)
 }
 
 

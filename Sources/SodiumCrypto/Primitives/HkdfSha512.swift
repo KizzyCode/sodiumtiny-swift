@@ -61,8 +61,7 @@ public struct HkdfSha512 {
     ///  - Returns: The output bytes
     private func hmac(bytes: ContiguousBytes, key: ContiguousBytes) throws -> SecureBytes {
         // Prepare the vars
-        var state = crypto_auth_hmacsha512_state(),
-            output = SecureBytes(zero: Int(exactly: crypto_auth_hmacsha512_BYTES)!)
+        var state = crypto_auth_hmacsha512_state(), output = try SecureBytes(zero: Self.hashSize)
         
         // Authenticate the data
         try bytes.withUnsafeBytes({ bytes, bytesCount in

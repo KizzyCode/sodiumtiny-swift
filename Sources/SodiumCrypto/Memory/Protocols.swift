@@ -2,8 +2,8 @@ import Foundation
 import Clibsodium
 
 
-// Adds an UInt8-pointer accessor to `ContiguousBytes`
-internal extension ContiguousBytes {
+// Extend `ContiguousBytes`
+public extension ContiguousBytes {
     /// The number of bytes in the buffer
     var count: Int {
         self.withUnsafeBytes({ $0.count })

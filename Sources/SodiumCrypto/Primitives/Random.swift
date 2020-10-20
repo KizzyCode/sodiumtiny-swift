@@ -18,7 +18,7 @@ public struct Random {
     /// Writes some cryptographically secure random bytes into a buffer
     ///
     ///  - Parameter buffer: The buffer to write the bytes to
-    public func generate<T: MutableSecureContiguousBytes>(into buffer: inout T) {
+    public func generate<T: MutableContiguousBytes>(into buffer: inout T) {
         buffer.withUnsafeMutableBytes({ self.generate(into: $0) })
     }
     
@@ -38,21 +38,18 @@ public struct Random {
         self.generate(into: &array)
         return array
     }
-    
     /// Generates some secure bytes filled with cryptographically secure random bytes
     ///
     ///  - Parameter count: The amount of random bytes to generate
     ///  - Returns: The cryptographically secure random bytes
     public func generate(bytes count: Int) -> SecureBytes {
-        self.generate(mutable: count)
+        SecureBytes(random: count)
     }
-    /// Generates some mutable secure bytes filled with cryptographically secure random bytes
+    /// Generates a cryptographically secure random key
     ///
-    ///  - Parameter count: The amount of random bytes to generate
-    ///  - Returns: The cryptographically secure random bytes
-    public func generate(mutable count: Int) -> MutableSecureBytes {
-        var bytes = MutableSecureBytes(zero: count)
-        self.generate(into: &bytes)
-        return bytes
+    ///  - Parameter count: The amount of key bytes to generate
+    ///  - Returns: The new key
+    public func generate(bytes count: Int) -> Key {
+        Key(random: count)
     }
 }

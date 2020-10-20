@@ -10,16 +10,16 @@ public struct HkdfSha512 {
     public static let outputSize = 0 ... Int(crypto_auth_hmacsha512_BYTES)
     
     /// The base key
-    private let baseKey: SecureBytes
+    private let baseKey: Key
     
     /// Creates a new KDF instance
     ///
     ///  - Parameter key: The base key to derive the subkeys from
-    public init(baseKey: SecureBytes) throws {
+    public init(baseKey: Key) throws {
         precondition(sodium_init() >= 0, "Failed to initialize libsodium")
         
         /// Validate the input
-        try Self.keySize.validate(value: baseKey.count)
+        try Self.keySize.validate(value: baseKey.bytes.count)
         
         self.baseKey = baseKey
     }
@@ -30,25 +30,25 @@ public struct HkdfSha512 {
     ///     - salt: A salt to randomize the output if appropriate
     ///     - context: Some context specific parameters; i.e. an app identifier etc.
     ///     - outputCount: The size of the subkey to derive
-    public func derive(salt: SecureContiguousBytes = "", context: SecureContiguousBytes,
-                       outputCount: Int = 32) throws -> SecureBytes {
+    public func derive<C: DataProtocol>(salt: ContiguousBytes = [], context: C,
+                                        outputCount: Int = 32) throws -> Key {
         // Validate the input
         try Self.outputSize.validate(value: outputCount)
         
         // Append a `0` byte to the context to mimic the first output block of HKDF
-        let paddedContext = MutableSecureBytes(copying: context)
+        var paddedContext = SecureBytes(copying: context)
         paddedContext.resize(to: paddedContext.count + 1, value: 0x01)
         
         // Prepare the salt and "extract" the key
-        let salt: SecureContiguousBytes = salt.count == 0
+        let salt: ContiguousBytes = salt.count == 0
             ? [UInt8](repeating: 0, count: outputCount)
             : salt
-        let intermediateOutput = try self.hmac(bytes: self.baseKey, key: salt)
+        let intermediateOutput = try self.hmac(bytes: self.baseKey.bytes, key: salt)
         
         // "Expand" the key
-        let output = try self.hmac(bytes: paddedContext, key: intermediateOutput)
+        var output = try self.hmac(bytes: paddedContext, key: intermediateOutput)
         output.resize(to: outputCount)
-        return output
+        return Key(wrapping: output)
     }
     
     /// Computes a HMAC-SHA2-512 over the input
@@ -57,10 +57,10 @@ public struct HkdfSha512 {
     ///     - bytes: The bytes to authenticate
     ///     - key: The key to authenticate the bytes with
     ///  - Returns: The output bytes
-    private func hmac(bytes: SecureContiguousBytes, key: SecureContiguousBytes) throws -> MutableSecureBytes {
+    private func hmac(bytes: ContiguousBytes, key: ContiguousBytes) throws -> SecureBytes {
         // Prepare the vars
         var state = crypto_auth_hmacsha512_state(),
-            output = MutableSecureBytes(zero: Int(exactly: crypto_auth_hmacsha512_BYTES)!)
+            output = SecureBytes(zero: Int(exactly: crypto_auth_hmacsha512_BYTES)!)
         
         // Authenticate the data
         try bytes.withUnsafeBytes({ bytes, bytesCount in
@@ -84,13 +84,13 @@ public struct HkdfSha512 {
     ///  - Discussion: The context is created by concatenating a field's length followed by the field itself; i.e.:
     ///    `fields[0].count || fields[0] || ... || fields[n].count || fields[n]`, where `.count` is encoded as 64 bit
     ///    big endian integer.
-    public static func context(fields: SecureContiguousBytes...) -> SecureBytes {
+    public static func context(fields: ContiguousBytes...) -> SecureBytes {
         // Map the fields to a sequence of `fieldCount, field, ...`
         let fields = fields.flatMap({ [UInt64($0.count), $0] }),
             fieldsCount = fields.reduce(0, { $0 + $1.count })
         
         // Write the fields to the context
-        var context = MutableSecureBytes(zero: fieldsCount), contextPosition = 0
+        var context = SecureBytes(zero: fieldsCount), contextPosition = 0
         for field in fields {
             // Write the field
             field.withUnsafeBytes({ field, fieldCount in

@@ -9,9 +9,7 @@ public struct SecureBytes {
     
     // Create an explicit count implementation to avoid conflicts
     /// The number of bytes in the buffer
-    public var count: Int {
-        self.memory.count
-    }
+    public var count: Int { self.memory.count }
     
     /// Creates a new all-zero secure memory object
     ///
@@ -83,9 +81,7 @@ extension SecureBytes: MutableDataProtocol {
     }
     
     public var startIndex: Int { 0 }
-    public var endIndex: Int {
-        self.count
-    }
+    public var endIndex: Int { self.count }
 }
 extension SecureBytes: Codable {
     public init(from decoder: Decoder) throws {

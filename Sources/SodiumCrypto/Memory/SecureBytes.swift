@@ -68,7 +68,6 @@ extension SecureBytes: ContiguousBytes, MutableContiguousBytes {
     }
 }
 extension SecureBytes: MutableDataProtocol {
-    // TODO: Remove?
     public init() {
         self.init(zero: 0)
     }

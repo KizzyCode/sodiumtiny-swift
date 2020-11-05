@@ -122,11 +122,11 @@ final class SodiumCryptoTests: XCTestCase {
         // Perform some random tests
         for _ in 0 ... 16_384 {
             // Generate random message and nonce
-            let message = rng.generate(data: 1027), ad = rng.generate(data: 1024), nonce = rng.generate(data: 16)
+            let message = rng.generate(data: 1027), ad = rng.generate(data: 1024), iv = rng.generate(data: 16)
             
             // Encrypt and decrypt message
-            let ciphertext = try siv.seal(plaintext: message, ad: ad, nonce: nonce),
-                plaintext = try siv.open(ciphertext: ciphertext, ad: ad, nonce: nonce)
+            let ciphertext = try siv.seal(plaintext: message, ad: ad, iv: iv),
+                plaintext = try siv.open(ciphertext: ciphertext, ad: ad, iv: iv)
             XCTAssertEqual(
                 message.withUnsafeBytes({ [UInt8]($0) }),
                 plaintext.withUnsafeBytes({ [UInt8]($0) }))
@@ -139,35 +139,35 @@ final class SodiumCryptoTests: XCTestCase {
         let key = try Key(random: 32), siv = try XchachaSIV(key: key), rng = Random()
         
         // Create a random sealed message
-        let ad = rng.generate(data: 1024), nonce = rng.generate(data: 16), plaintext = rng.generate(data: 1027),
-            ciphertext = try siv.seal(plaintext: plaintext, ad: ad, nonce: nonce)
+        let ad = rng.generate(data: 1024), iv = rng.generate(data: 16), plaintext = rng.generate(data: 1027),
+            ciphertext = try siv.seal(plaintext: plaintext, ad: ad, iv: iv)
         
         // Modify the ciphertext
         do {
             var ciphertext = Data(ciphertext)
             ciphertext[7] = ~ciphertext[7]
-            XCTAssertThrowsError(try siv.open(ciphertext: ciphertext, ad: ad, nonce: nonce))
+            XCTAssertThrowsError(try siv.open(ciphertext: ciphertext, ad: ad, iv: iv))
         }
         
         // Modify the ciphertext tag
         do {
             var ciphertext = Data(ciphertext)
             ciphertext.append(~ciphertext.popLast()!)
-            XCTAssertThrowsError(try siv.open(ciphertext: ciphertext, ad: ad, nonce: nonce))
+            XCTAssertThrowsError(try siv.open(ciphertext: ciphertext, ad: ad, iv: iv))
         }
         
         // Modify the associated data
         do {
             var ad = ad.withUnsafeBytes({ Data($0) })
             ad[7] = ~ad[7]
-            XCTAssertThrowsError(try siv.open(ciphertext: ciphertext, ad: ad, nonce: nonce))
+            XCTAssertThrowsError(try siv.open(ciphertext: ciphertext, ad: ad, iv: iv))
         }
         
         // Modify the nonce
         do {
-            var nonce = nonce.withUnsafeBytes({ Data($0) })
-            nonce[7] = ~nonce[7]
-            XCTAssertThrowsError(try siv.open(ciphertext: ciphertext, ad: ad, nonce: nonce))
+            var iv = iv.withUnsafeBytes({ Data($0) })
+            iv[7] = ~iv[7]
+            XCTAssertThrowsError(try siv.open(ciphertext: ciphertext, ad: ad, iv: iv))
         }
     }
     

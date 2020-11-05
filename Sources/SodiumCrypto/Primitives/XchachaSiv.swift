@@ -7,9 +7,8 @@ import XChaChaSIV
 public struct XchachaSIV {
     /// The key size
     public static let keySize = Int(crypto_aead_det_xchacha20_KEYBYTES) ... Int(crypto_aead_det_xchacha20_KEYBYTES)
-    /// The nonce size
-    public static let nonceSize = Int(crypto_aead_det_xchacha20_NONCEBYTES)
-        ... Int(crypto_aead_det_xchacha20_NONCEBYTES)
+    /// The IV size
+    public static let ivSize = Int(crypto_aead_det_xchacha20_NONCEBYTES) ... Int(crypto_aead_det_xchacha20_NONCEBYTES)
     
     /// The key
     private let key: Key
@@ -30,18 +29,19 @@ public struct XchachaSIV {
     ///  - Parameters:
     ///     - plaintext: The message to seal
     ///     - ad: The associated data to authenticate
-    ///     - nonce: The nonce to use
+    ///     - iv: The IV to use if any
     ///
     ///  - Returns: The sealed box
-    public func seal(plaintext: ContiguousBytes, ad: ContiguousBytes = [], nonce: ContiguousBytes) throws -> Data {
+    public func seal(plaintext: ContiguousBytes, ad: ContiguousBytes = [], iv: ContiguousBytes?) throws -> Data {
         // Validate input
-        try Self.nonceSize.validate(value: nonce.count)
+        let iv = iv ?? Data(count: Self.ivSize.first!)
+        try Self.ivSize.validate(value: iv.count)
         
         // Prepare vars
         var output = Data(count: plaintext.count + Int(crypto_aead_det_xchacha20_ABYTES))
         
         // Seal the message
-        try nonce.withUnsafeBytes({ nonce, _ in
+        try iv.withUnsafeBytes({ iv, _ in
             try plaintext.withUnsafeBytes({ plaintext, plaintextCount in
                 try ad.withUnsafeBytes({ ad, adCount in
                     try self.key.bytes.withUnsafeBytes({ key, _ in
@@ -49,7 +49,7 @@ public struct XchachaSIV {
                             // Encrypt the data
                             let result = crypto_aead_det_xchacha20_encrypt(
                                 output, plaintext, plaintextCount, ad, adCount,
-                                nonce, key)
+                                iv, key)
                             try ReturnCode.ok.validate(code: result)
                         })
                     })
@@ -68,15 +68,16 @@ public struct XchachaSIV {
     ///
     ///  - Returns: The opened message
     public func open(ciphertext: ContiguousBytes, ad: ContiguousBytes = [],
-                     nonce: ContiguousBytes) throws -> SecureBytes {
+                     iv: ContiguousBytes?) throws -> SecureBytes {
         // Validate input
-        try Self.nonceSize.validate(value: nonce.count)
+        let iv = iv ?? Data(count: Self.ivSize.first!)
+        try Self.ivSize.validate(value: iv.count)
         
         // Prepare vars
         var output = try SecureBytes(zero: ciphertext.count)
         
         // Open the message
-        try nonce.withUnsafeBytes({ nonce, _ in
+        try iv.withUnsafeBytes({ iv, _ in
             try ciphertext.withUnsafeBytes({ ciphertext, ciphertextCount in
                 try ad.withUnsafeBytes({ ad, adCount in
                     try self.key.bytes.withUnsafeBytes({ key, _ in
@@ -84,7 +85,7 @@ public struct XchachaSIV {
                             // Decrypt the data
                             let result = crypto_aead_det_xchacha20_decrypt(
                                 output, ciphertext, ciphertextCount, ad, adCount,
-                                nonce, key)
+                                iv, key)
                             try ReturnCode.ok.validate(code: result)
                         })
                     })

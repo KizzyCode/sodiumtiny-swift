@@ -12,7 +12,9 @@ Implements some cryptographic building blocks over libsodium.
 ## License
 All code that is not 3rd-party code is published under both the MIT or the BSD-2-Clause license - choose as you wish.
 
-### MIT License
+### SodiumCrypto
+
+#### MIT License
 > MIT License
 > 
 > Copyright (c) 2020 Keziah Biermann
@@ -36,7 +38,7 @@ All code that is not 3rd-party code is published under both the MIT or the BSD-2
 > SOFTWARE.__
 
 
-### BSD-2-Clause License
+#### BSD-2-Clause License
 > Copyright (c) 2020, Keziah Biermann
 > All rights reserved.
 > 
@@ -60,16 +62,13 @@ All code that is not 3rd-party code is published under both the MIT or the BSD-2
 > (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 > SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.__
 
-
-### 3rd Party Code
-
-#### Libsodium
+### 3rd-Party: Libsodium
 [The famous libsodium library](https://github.com/jedisct1/libsodium) as prebuild framework `/Clibsodium.xcframework` based on
 revision [53cdaa4](https://github.com/jedisct1/libsodium/tree/53cdaa4f514ae7dcbab0c2e248b932f506ad9e12). However you're
 encouraged to build and include the framework yourself (don't forget to set `LIBSODIUM_FULL_BUILD=true` because we need
 `crypto_stream_xchacha20_xor`).
 
-##### License
+#### License
 > ISC License
 > 
 > Copyright (c) 2013-2020
@@ -87,11 +86,11 @@ encouraged to build and include the framework yourself (don't forget to set `LIB
 > ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 > OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-#### XChaCha20-SIV
+### 3rd-Party: XChaCha20-SIV
 [An XChaCha20-SIV implementation](https://github.com/jedisct1/libsodium-xchacha20-siv) in `/Sources/XChaChaSIV` based on
 revision [c4f6ee8](https://github.com/jedisct1/libsodium-xchacha20-siv/tree/c4f6ee85ac7fc633a81edcae8fc923f7690c1766).
 
-##### License
+#### License
 > BSD 2-Clause License
 > 
 > Copyright (c) 2020, Frank Denis

@@ -1,5 +1,4 @@
 import XCTest
-import Sodium
 @testable import SodiumCrypto
 
 #if canImport(CryptoKit)
@@ -7,6 +6,8 @@ import CryptoKit
 #endif
 
 final class SodiumCryptoTests: XCTestCase {
+    // MARK: - Tests SecureBytes
+    
     /// Allocate up to 256 MiB of memory
     func testSecureBytesLargeAlloc() throws {
         // Allocate the memory and perform some accesses
@@ -23,10 +24,12 @@ final class SodiumCryptoTests: XCTestCase {
         }
     }
     
-    /// Tests the `AeadXchachaPoly` implementation
-    func testAeadXchachPoly() throws {
+    // MARK: - Tests XchachaPoly
+    
+    /// Tests the `XchachaPoly` implementation
+    func testXchachaPoly() throws {
         // Generate an AEAD instance
-        let key = try Key(random: 32), aead = try AeadXchachaPoly(key: key), rng = Random()
+        let key = try Key(random: 32), aead = try XchachaPoly(key: key), rng = Random()
         
         // Perform some random tests
         for _ in 0 ... 16_384 {
@@ -42,34 +45,39 @@ final class SodiumCryptoTests: XCTestCase {
         }
     }
     
-    /// Tests the `AeadXchachaPoly` implementation against libsodium
-    func testAeadXchachPolyCompare() throws {
-        // Generate an AEAD instance
-        let key = try Key(random: 32), rng = Random(), sodiumKey = key.bytes.withUnsafeBytes({ [UInt8]($0) }),
-            aead = try AeadXchachaPoly(key: key), sodiumAead = Sodium().aead.xchacha20poly1305ietf
+    /// Tests the `XchachaPoly` implementation against libsodium
+    func testXchachaPolyPredefined() throws {
+        /// Define and load the test vectors
+        struct TestVector: Codable {
+            let key: Data
+            let nonce: Data
+            let plaintext: Data
+            let ad: Data
+            let ciphertext: Data
+        }
+        let testsPath = Bundle.module.url(forResource: "AeadXchachaPolyPredefined", withExtension: "json")!,
+            testsJSON = try! Data(contentsOf: testsPath),
+            tests = try! JSONDecoder().decode([TestVector].self, from: testsJSON)
         
         // Test sealing against libsodium
-        for _ in 0 ... 16_384 {
-            // Generate a random message and nonce
-            let message = rng.generate(data: 1027), nonce = rng.generate(byteArray: 24)
+        for test in tests {
+            // Load key and create AEAD instance
+            let key = try Key(copying: test.key), aead = try XchachaPoly(key: key)
             
             // Seal and split the message
-            let ciphertext = try aead.seal(plaintext: message, nonce: nonce),
-                sodiumCiphertext = ciphertext.withUnsafeBytes({ [UInt8]($0) })
-                
+            let ciphertext = try aead.seal(plaintext: test.plaintext, ad: test.ad, nonce: test.nonce)
+            XCTAssertEqual(ciphertext, test.ciphertext)
+            
             // Reopen the ciphertext
-            let plaintext = sodiumAead.decrypt(authenticatedCipherText: sodiumCiphertext, secretKey: sodiumKey,
-                                               nonce: nonce)
-            XCTAssertEqual(
-                message.withUnsafeBytes({ [UInt8]($0) }),
-                plaintext)
+            let plaintext = try aead.open(ciphertext: test.ciphertext, ad: test.ad, nonce: test.nonce)
+            XCTAssertEqual(Data(plaintext), test.plaintext)
         }
     }
     
-    /// Tests the `AeadXchachaPoly` implementation
-    func testAeadXchachPolyError() throws {
+    /// Tests the `XchachaPoly` implementation
+    func testXchachaPolyError() throws {
         // Generate an AEAD instance
-        let key = try Key(random: 32), aead = try AeadXchachaPoly(key: key), rng = Random()
+        let key = try Key(random: 32), aead = try XchachaPoly(key: key), rng = Random()
         
         // Create a random sealed message
         let ad = rng.generate(data: 1024), nonce = rng.generate(data: 24), plaintext = rng.generate(data: 1027),
@@ -103,6 +111,67 @@ final class SodiumCryptoTests: XCTestCase {
             XCTAssertThrowsError(try aead.open(ciphertext: ciphertext, ad: ad, nonce: nonce))
         }
     }
+    
+    // MARK: - Tests XchachaSIV
+    
+    /// Tests the `XchachaSIV` implementation
+    func testXchachaSIV() throws {
+        // Generate an AEAD instance
+        let key = try Key(random: 32), siv = try XchachaSIV(key: key), rng = Random()
+        
+        // Perform some random tests
+        for _ in 0 ... 16_384 {
+            // Generate random message and nonce
+            let message = rng.generate(data: 1027), ad = rng.generate(data: 1024), nonce = rng.generate(data: 16)
+            
+            // Encrypt and decrypt message
+            let ciphertext = try siv.seal(plaintext: message, ad: ad, nonce: nonce),
+                plaintext = try siv.open(ciphertext: ciphertext, ad: ad, nonce: nonce)
+            XCTAssertEqual(
+                message.withUnsafeBytes({ [UInt8]($0) }),
+                plaintext.withUnsafeBytes({ [UInt8]($0) }))
+        }
+    }
+    
+    /// Tests the `XchachaSIV` implementation
+    func testXchachaSIVError() throws {
+        // Generate an AEAD instance
+        let key = try Key(random: 32), siv = try XchachaSIV(key: key), rng = Random()
+        
+        // Create a random sealed message
+        let ad = rng.generate(data: 1024), nonce = rng.generate(data: 16), plaintext = rng.generate(data: 1027),
+            ciphertext = try siv.seal(plaintext: plaintext, ad: ad, nonce: nonce)
+        
+        // Modify the ciphertext
+        do {
+            var ciphertext = Data(ciphertext)
+            ciphertext[7] = ~ciphertext[7]
+            XCTAssertThrowsError(try siv.open(ciphertext: ciphertext, ad: ad, nonce: nonce))
+        }
+        
+        // Modify the ciphertext tag
+        do {
+            var ciphertext = Data(ciphertext)
+            ciphertext.append(~ciphertext.popLast()!)
+            XCTAssertThrowsError(try siv.open(ciphertext: ciphertext, ad: ad, nonce: nonce))
+        }
+        
+        // Modify the associated data
+        do {
+            var ad = ad.withUnsafeBytes({ Data($0) })
+            ad[7] = ~ad[7]
+            XCTAssertThrowsError(try siv.open(ciphertext: ciphertext, ad: ad, nonce: nonce))
+        }
+        
+        // Modify the nonce
+        do {
+            var nonce = nonce.withUnsafeBytes({ Data($0) })
+            nonce[7] = ~nonce[7]
+            XCTAssertThrowsError(try siv.open(ciphertext: ciphertext, ad: ad, nonce: nonce))
+        }
+    }
+    
+    // MARK: - Tests HkdfSha512
     
     /// Tests the `KdfBlake2b` implementation against a well known result
     func testHkdfSha512() throws {
@@ -164,6 +233,7 @@ final class SodiumCryptoTests: XCTestCase {
         XCTAssertEqual(context.withUnsafeBytes({ [UInt8]($0) }), expected)
     }
     
+    // MARK: - Tests Rand
     
     /// A rudimentary test the random number generator
     func testRand() {
@@ -183,9 +253,11 @@ final class SodiumCryptoTests: XCTestCase {
     
     static var allTests = [
         ("testSecureBytesLargeAlloc", testSecureBytesLargeAlloc),
-        ("testAeadXchachPoly", testAeadXchachPoly),
-        ("testAeadXchachPolyCompare", testAeadXchachPolyCompare),
-        ("testAeadXchachPolyError", testAeadXchachPolyError),
+        ("testXchachaPoly", testXchachaPoly),
+        ("testXchachaPolyCompare", testXchachaPolyPredefined),
+        ("testXchachaPolyError", testXchachaPolyError),
+        ("testXchachaSIV", testXchachaSIV),
+        ("testXchachaSIVError", testXchachaSIVError),
         ("testHkdfSha512", testHkdfSha512),
         ("testHkdfSha512Compare", testHkdfSha512Compare),
         ("testRand", testRand)

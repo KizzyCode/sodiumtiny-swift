@@ -22,7 +22,6 @@ public struct HkdfSha512 {
         
         /// Validate the input
         try Self.keySize.validate(value: baseKey.bytes.count)
-        
         self.baseKey = baseKey
     }
     
@@ -32,8 +31,7 @@ public struct HkdfSha512 {
     ///     - salt: A salt to randomize the output if appropriate
     ///     - context: Some context specific parameters; i.e. an app identifier etc.
     ///     - outputCount: The size of the subkey to derive
-    public func derive<C: DataProtocol>(salt: ContiguousBytes = [], context: C,
-                                        outputCount: Int = 32) throws -> Key {
+    public func derive<C: DataProtocol>(salt: ContiguousBytes = [], context: C, outputCount: Int = 32) throws -> Key {
         // Validate the input
         try Self.outputSize.validate(value: outputCount)
         

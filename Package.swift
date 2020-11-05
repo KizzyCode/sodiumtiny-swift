@@ -6,21 +6,30 @@ let package = Package(
     name: "SodiumCrypto",
     products: [
         .library(
+            name: "Clibsodium",
+            targets: ["Clibsodium"]),
+        .library(
+            name: "XChaChaSIV",
+            targets: ["XChaChaSIV"]),
+        .library(
             name: "SodiumCrypto",
             targets: ["SodiumCrypto"])
     ],
-    dependencies: [
-        .package(
-            name: "Sodium",
-            url: "https://github.com/jedisct1/swift-sodium",
-            .exact("0.9.0"))
-    ],
+    dependencies: [],
     targets: [
+        .binaryTarget(
+            name: "Clibsodium",
+            path: "Clibsodium.xcframework"),
+        .target(
+            name: "XChaChaSIV",
+            dependencies: ["Clibsodium"],
+            cSettings: [.headerSearchPath("Clibsodium")]),
         .target(
             name: "SodiumCrypto",
-            dependencies: ["Sodium"]),
+            dependencies: ["Clibsodium", "XChaChaSIV"]),
         .testTarget(
             name: "SodiumCryptoTests",
-            dependencies: ["SodiumCrypto"])
+            dependencies: ["SodiumCrypto"],
+            resources: [.process("AeadXchachaPolyPredefined.json")])
     ]
 )

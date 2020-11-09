@@ -1,7 +1,10 @@
 import XCTest
 
-import SodiumCryptoTests
+import SodiumCoreTests
+import SodiumMemoryTests
 
 var tests = [XCTestCaseEntry]()
-tests += SodiumCryptoTests.allTests()
+tests += SodiumCoreTests.__allTests()
+tests += SodiumMemoryTests.__allTests()
+
 XCTMain(tests)

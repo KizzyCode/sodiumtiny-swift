@@ -6,14 +6,11 @@ let package = Package(
     name: "SodiumCrypto",
     products: [
         .library(
-            name: "Clibsodium",
-            targets: ["Clibsodium"]),
+            name: "SodiumMemory",
+            targets: ["SodiumMemory"]),
         .library(
-            name: "XChaChaSIV",
-            targets: ["XChaChaSIV"]),
-        .library(
-            name: "SodiumCrypto",
-            targets: ["SodiumCrypto"])
+            name: "SodiumCore",
+            targets: ["SodiumCore"])
     ],
     dependencies: [],
     targets: [
@@ -24,12 +21,20 @@ let package = Package(
             name: "XChaChaSIV",
             dependencies: ["Clibsodium"],
             cSettings: [.headerSearchPath("Clibsodium")]),
+        
         .target(
-            name: "SodiumCrypto",
-            dependencies: ["Clibsodium", "XChaChaSIV"]),
+            name: "SodiumMemory",
+            dependencies: ["Clibsodium"]),
+        .target(
+            name: "SodiumCore",
+            dependencies: ["Clibsodium", "XChaChaSIV", "SodiumMemory"]),
+        
         .testTarget(
-            name: "SodiumCryptoTests",
-            dependencies: ["SodiumCrypto"],
-            resources: [.process("AeadXchachaPolyPredefined.json")])
+            name: "SodiumCoreTests",
+            dependencies: ["SodiumCore", "SodiumMemory"],
+            resources: [.process("XchachaPoly.json"), .process("HkdfSha512.json")]),
+        .testTarget(
+            name: "SodiumMemoryTests",
+            dependencies: ["SodiumCore", "SodiumMemory"])
     ]
 )

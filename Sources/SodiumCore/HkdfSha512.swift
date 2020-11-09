@@ -1,4 +1,5 @@
 import Foundation
+import SodiumMemory
 import Clibsodium
 
 
@@ -12,16 +13,16 @@ public struct HkdfSha512 {
     private static let hashSize = Int(crypto_auth_hmacsha512_BYTES)
     
     /// The base key
-    private let baseKey: Key
+    private let baseKey: SecureBytes
     
     /// Creates a new KDF instance
     ///
     ///  - Parameter key: The base key to derive the subkeys from
-    public init(baseKey: Key) throws {
+    public init(baseKey: SecureBytes) throws {
         precondition(sodium_init() >= 0, "Failed to initialize libsodium")
         
         /// Validate the input
-        try Self.keySize.validate(value: baseKey.bytes.count)
+        try Self.keySize.validate(value: baseKey.count)
         self.baseKey = baseKey
     }
     
@@ -31,7 +32,8 @@ public struct HkdfSha512 {
     ///     - salt: A salt to randomize the output if appropriate
     ///     - context: Some context specific parameters; i.e. an app identifier etc.
     ///     - outputCount: The size of the subkey to derive
-    public func derive<C: DataProtocol>(salt: ContiguousBytes = [], context: C, outputCount: Int = 32) throws -> Key {
+    public func derive<C: DataProtocol>(salt: ContiguousBytes = [], context: C,
+                                        outputCount: Int = 32) throws -> SecureBytes {
         // Validate the input
         try Self.outputSize.validate(value: outputCount)
         
@@ -43,12 +45,12 @@ public struct HkdfSha512 {
         let salt: ContiguousBytes = salt.count == 0
             ? [UInt8](repeating: 0, count: Self.hashSize)
             : salt
-        let intermediateOutput = try self.hmac(bytes: self.baseKey.bytes, key: salt)
+        let intermediateOutput = try self.hmac(bytes: self.baseKey, key: salt)
         
         // "Expand" the key
         var output = try self.hmac(bytes: paddedContext, key: intermediateOutput)
         try output.resize(to: outputCount)
-        return Key(wrapping: output)
+        return output
     }
     
     /// Computes a HMAC-SHA2-512 over the input
@@ -73,33 +75,5 @@ public struct HkdfSha512 {
             })
         })
         return output
-    }
-    
-    /// Builds a context from multiple fields/parameters
-    ///
-    ///  - Parameter fields: The fields to combine to a single context literal
-    ///  - Returns: The new context
-    ///
-    ///  - Discussion: The context is created by concatenating a field's length followed by the field itself; i.e.:
-    ///    `fields[0].count || fields[0] || ... || fields[n].count || fields[n]`, where `.count` is encoded as 64 bit
-    ///    big endian integer.
-    public static func context(fields: ContiguousBytes...) throws -> SecureBytes {
-        // Map the fields to a sequence of `fieldCount, field, ...`
-        let fields = fields.flatMap({ [UInt64($0.count), $0] }),
-            fieldsCount = fields.reduce(0, { $0 + $1.count })
-        
-        // Write the fields to the context
-        var context = try SecureBytes(zero: fieldsCount), contextPosition = 0
-        for field in fields {
-            // Write the field
-            field.withUnsafeBytes({ field, fieldCount in
-                context.withUnsafeMutableBytes({ context in
-                    // Write the field and increment the position
-                    (context.baseAddress! + contextPosition).copyMemory(from: field, byteCount: fieldCount)
-                    contextPosition += fieldCount
-                })
-            })
-        }
-        return context
     }
 }

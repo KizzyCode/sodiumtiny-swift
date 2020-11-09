@@ -23,7 +23,7 @@ public struct SecureBytes {
     ///  - Parameter count: The amount of random bytes to generate
     public init(random count: Int) throws {
         self.memory = try SodiumMemory(count: count)
-        self.memory.write({ Random().generate(into: $0) })
+        self.memory.write({ randombytes_buf($0.baseAddress!, $0.count) })
     }
     /// Creates a new secure memory object by copying the passed bytes
     ///
@@ -65,7 +65,7 @@ extension SecureBytes: ContiguousBytes, MutableContiguousBytes {
         try self.memory.write(body)
     }
 }
-extension SecureBytes: MutableDataProtocol {
+extension SecureBytes: DataProtocol, MutableDataProtocol {
     public init() {
         try! self.init(zero: 0)
     }
@@ -98,41 +98,5 @@ extension SecureBytes: Codable {
         var data = self.withUnsafeBytes({ Data($0) })
         defer { data.erase() }
         try data.encode(to: encoder)
-    }
-}
-
-
-/// A cryptographic key
-///
-///  - Discussion: This wrapper exists to hide everything that provides implicit access to the secret bytes like e.g.
-///    `DataProtocol`, `ContiguousBytes`, `Codable` etc. Those implementations are still available but must be accessed
-///    explicitely via the `.bytes`-property.
-public struct Key {
-    /// The underlying key bytes
-    public let bytes: SecureBytes
-    
-    /// Creates a new key by wrapping the passed bytes
-    ///
-    ///  - Parameter bytes: The key bytes to wrap
-    public init(wrapping bytes: SecureBytes) {
-        self.bytes = bytes
-    }
-    /// Creates a new cryptographically secure random key
-    ///
-    ///  - Parameter count: The amount of key bytes to generate
-    public init(random count: Int = 32) throws {
-        self.bytes = try SecureBytes(random: count)
-    }
-    /// Creates a new key by copying the passed bytes
-    ///
-    ///  - Parameter bytes: The key bytes to copy
-    public init<D: DataProtocol>(copying bytes: D) throws {
-        self.bytes = try SecureBytes(copying: bytes)
-    }
-    /// Creates a new key by copying and erasing the passed bytes
-    ///
-    ///  - Parameter bytes: The bytes that will be copied and erased
-    public init<D: DataProtocol & MutableContiguousBytes>(erasing bytes: inout D) throws {
-        self.bytes = try SecureBytes(erasing: &bytes)
     }
 }

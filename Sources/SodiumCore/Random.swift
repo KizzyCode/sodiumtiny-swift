@@ -1,4 +1,5 @@
 import Foundation
+import SodiumMemory
 import Clibsodium
 
 
@@ -44,12 +45,5 @@ public struct Random {
     ///  - Returns: The cryptographically secure random bytes
     public func generate(bytes count: Int) throws -> SecureBytes {
         try SecureBytes(random: count)
-    }
-    /// Generates a cryptographically secure random key
-    ///
-    ///  - Parameter count: The amount of key bytes to generate
-    ///  - Returns: The new key
-    public func generate(bytes count: Int) throws -> Key {
-        try Key(random: count)
     }
 }

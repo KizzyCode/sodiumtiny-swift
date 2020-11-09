@@ -1,6 +1,13 @@
 import Clibsodium
 
 
+/// A `SodiumMemory`
+public enum SodiumMemoryError: Error {
+    /// Failed to allocate secure protected memory
+    case allocationError(count: Int, file: String = #file, line: Int = #line)
+}
+
+
 /// Some libsodium managed memory
 internal class SodiumMemory {
     /// The raw memory
@@ -18,7 +25,7 @@ internal class SodiumMemory {
         
         // Allocate the memory
         guard let ptr = sodium_malloc(count) else {
-            throw SodiumCryptoError.allocationError(count: count)
+            throw SodiumMemoryError.allocationError(count: count)
         }
         sodium_mprotect_noaccess(ptr)
         

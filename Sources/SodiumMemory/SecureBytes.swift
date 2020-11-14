@@ -11,13 +11,6 @@ public struct SecureBytes {
     /// The number of bytes in the buffer
     public var count: Int { self.memory.count }
     
-    /// Creates a new all-zero secure memory object
-    ///
-    ///  - Parameter count: The amount of zero bytes
-    public init(zero count: Int = 0) throws {
-        self.memory = try SodiumMemory(count: count)
-        self.erase()
-    }
     /// Generates some secure bytes filled with cryptographically secure random bytes
     ///
     ///  - Parameter count: The amount of random bytes to generate
@@ -25,17 +18,10 @@ public struct SecureBytes {
         self.memory = try SodiumMemory(count: count)
         self.memory.write({ randombytes_buf($0.baseAddress!, $0.count) })
     }
-    /// Creates a new secure memory object by copying the passed bytes
-    ///
-    ///  - Parameter bytes: The bytes to copy
-    public init<D: DataProtocol>(copying bytes: D) throws {
-        self.memory = try SodiumMemory(count: bytes.count)
-        self.memory.write({ $0.copyBytes(from: bytes) })
-    }
     /// Creates a new secure memory object by copying and erasing the passed bytes
     ///
     ///  - Parameter bytes: The bytes that will be copied and erased
-    public init<D: DataProtocol & MutableContiguousBytes>(erasing bytes: inout D) throws {
+    public init<D: MutableContiguousBytes>(erasing bytes: inout D) throws {
         defer { bytes.erase() }
         try self.init(copying: bytes)
     }
@@ -58,6 +44,11 @@ public struct SecureBytes {
     }
 }
 extension SecureBytes: ContiguousBytes, MutableContiguousBytes {
+    public init(count: Int) throws {
+        self.memory = try SodiumMemory(count: count)
+        self.erase()
+    }
+    
     public func withUnsafeBytes<R>(_ body: (UnsafeRawBufferPointer) throws -> R) rethrows -> R {
         try self.memory.read(body)
     }
@@ -67,7 +58,7 @@ extension SecureBytes: ContiguousBytes, MutableContiguousBytes {
 }
 extension SecureBytes: DataProtocol, MutableDataProtocol {
     public init() {
-        try! self.init(zero: 0)
+        try! self.init(count: 0)
     }
     
     public typealias Regions = CollectionOfOne<SecureBytes>

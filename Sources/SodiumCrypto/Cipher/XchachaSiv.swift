@@ -1,23 +1,23 @@
 import Foundation
 import SodiumMemory
 import Clibsodium
-import XChaChaSIV
+import CXchachaSiv
 
 
 /// XChaCha20+Blake2b SIV
 public struct XchachaSiv {
     /// The key size
-    public static let keySize = Int(crypto_aead_det_xchacha20_KEYBYTES) ... Int(crypto_aead_det_xchacha20_KEYBYTES)
+    public static let keySize = Int(crypto_aead_det_xchacha20_KEYBYTES)...Int(crypto_aead_det_xchacha20_KEYBYTES)
     /// The IV size
-    public static let ivSize = Int(crypto_aead_det_xchacha20_NONCEBYTES) ... Int(crypto_aead_det_xchacha20_NONCEBYTES)
+    public static let ivSize = Int(crypto_aead_det_xchacha20_NONCEBYTES)...Int(crypto_aead_det_xchacha20_NONCEBYTES)
     
     /// The key
-    private let key: SecureBytes
+    private let key: ContiguousBytes
     
     /// Creates a new AEAD instance
     ///
     ///  - Parameter key: The key to use
-    public init(key: SecureBytes) throws {
+    public init(key: ContiguousBytes) throws {
         precondition(sodium_init() >= 0, "Failed to initialize libsodium")
         
         /// Validate the input
@@ -28,18 +28,20 @@ public struct XchachaSiv {
     /// Seals a message
     ///
     ///  - Parameters:
+    ///     - type: An optional type hint for the return type
     ///     - plaintext: The message to seal
     ///     - ad: The associated data to authenticate
     ///     - iv: The IV to use if any
     ///
     ///  - Returns: The sealed box
-    public func seal(plaintext: ContiguousBytes, ad: ContiguousBytes = [], iv: ContiguousBytes?) throws -> Data {
+    public func seal<R: MutableContiguousBytes>(_ type: R.Type = R.self, plaintext: ContiguousBytes,
+                                                ad: ContiguousBytes = [], iv: ContiguousBytes?) throws -> R {
         // Validate input
-        let iv = iv ?? Data(count: Self.ivSize.first!)
+        let iv: ContiguousBytes = iv ?? Data(count: Self.ivSize.first!)
         try Self.ivSize.validate(value: iv.count)
         
         // Prepare vars
-        var output = Data(count: plaintext.count + Int(crypto_aead_det_xchacha20_ABYTES))
+        var output = try R(count: plaintext.count + Int(crypto_aead_det_xchacha20_ABYTES))
         
         // Seal the message
         try iv.withUnsafeBytes({ iv, _ in
@@ -63,19 +65,20 @@ public struct XchachaSiv {
     /// Opens a message
     ///
     ///  - Parameters:
+    ///     - type: An optional type hint for the return type
     ///     - ciphertext: The message to open
     ///     - ad: The associated data to authenticate
     ///     - nonce: The nonce to use
     ///
     ///  - Returns: The opened message
-    public func open(ciphertext: ContiguousBytes, ad: ContiguousBytes = [],
-                     iv: ContiguousBytes?) throws -> SecureBytes {
+    public func open<R: MutableContiguousBytes>(_ type: R.Type = R.self, ciphertext: ContiguousBytes,
+                                                ad: ContiguousBytes = [], iv: ContiguousBytes?) throws -> R {
         // Validate input
-        let iv = iv ?? Data(count: Self.ivSize.first!)
+        let iv: ContiguousBytes = iv ?? Data(count: Self.ivSize.first!)
         try Self.ivSize.validate(value: iv.count)
         
         // Prepare vars
-        var output = try SecureBytes(zero: ciphertext.count)
+        var output = try R(count: ciphertext.count)
         
         // Open the message
         try iv.withUnsafeBytes({ iv, _ in
@@ -95,7 +98,7 @@ public struct XchachaSiv {
         })
         
         // Trim and return output
-        try output.resize(to: ciphertext.count - Int(crypto_aead_det_xchacha20_ABYTES))
+        output = try R(copying: output, count: ciphertext.count - Int(crypto_aead_det_xchacha20_ABYTES))
         return output
     }
 }

@@ -20,28 +20,12 @@ public extension ContiguousBytes {
         })
     }
 }
-extension UnsafeMutableRawBufferPointer: DataProtocol {
-    public typealias Regions = CollectionOfOne<UnsafeMutableRawBufferPointer>
-    public var regions: CollectionOfOne<UnsafeMutableRawBufferPointer> { CollectionOfOne(self) }
-}
-extension UInt64: ContiguousBytes, DataProtocol {
-    public typealias Regions = CollectionOfOne<UInt64>
-    public typealias Element = UInt8
-    public typealias Index = Int
-    public typealias SubSequence = UInt64
-    public typealias Indices = Range<Int>
-    public var regions: CollectionOfOne<UInt64> { CollectionOfOne(self) }
-    public var startIndex: Int { 0 }
-    public var endIndex: Int { self.count }
-    
-    public subscript(position: Int) -> UInt8 {
-        self.withUnsafeBytes({ $0[0] })
+extension String: ContiguousBytes {
+    public func withUnsafeBytes<R>(_ body: (UnsafeRawBufferPointer) throws -> R) rethrows -> R {
+        try self.data(using: .utf8)!.withUnsafeBytes(body)
     }
-    
-    // Create an explicit count implementation to avoid conflicts
-    /// The number of bytes in the buffer
-    public var count: Int { 8 }
-    
+}
+extension UInt64: ContiguousBytes {
     /// Access the underlying bytes in their **big-endian** representation
     ///
     ///  - Parameter body: The accessor for the underlying raw buffer pointer
@@ -54,6 +38,11 @@ extension UInt64: ContiguousBytes, DataProtocol {
 /// Indicates that the conforming type is a contiguous collection of mutable raw bytes whose underlying storage is
 /// directly accessible by `withUnsafeMutableBytes`
 public protocol MutableContiguousBytes: ContiguousBytes {
+    /// Creates a new all-zero instance of `Self`
+    ///
+    ///  - Parameter count: The amount of zero bytes to allocate
+    init(count: Int) throws
+    
     /// Accesses the underlying raw bytes
     ///
     ///  - Parameter body: The accessor that gets the pointer and the size of the underlying bytes
@@ -61,17 +50,35 @@ public protocol MutableContiguousBytes: ContiguousBytes {
     mutating func withUnsafeMutableBytes<R>(_ body: (UnsafeMutableRawBufferPointer) throws -> R) rethrows -> R
 }
 public extension MutableContiguousBytes {
+    /// Creates a new instance of `Self` by copying the passed bytes
+    ///
+    ///  - Parameter bytes: The bytes to copy
+    init(copying bytes: ContiguousBytes) throws {
+        try self.init(copying: bytes, count: bytes.count)
+    }
+    /// Creates a new instance of `Self` by copying the passed bytes
+    ///
+    ///  - Parameters:
+    ///     - bytes: The bytes to copy
+    ///     - count: The amount of bytes to allocate
+    init(copying bytes: ContiguousBytes, count: Int) throws {
+        try self.init(count: count)
+        
+        // Copy the bytes
+        let toCopy = min(bytes.count, count)
+        bytes.withUnsafeBytes({ bytes in
+            self.withUnsafeMutableBytes({ this in
+                _ = bytes.copyBytes(to: this, count: toCopy)
+            })
+        })
+    }
+    
     /// Accesses the underlying raw bytes
     ///
     ///  - Parameter body: The accessor that gets the pointer and the size of the underlying bytes
     ///  - Returns: The result of the accessor body
     mutating func withUnsafeMutableBytes<R>(_ body: (UnsafeMutablePointer<UInt8>, Int) throws -> R) rethrows -> R {
-        // Create working copy
-        var this = self
-        defer { self = this }
-        
-        // Access bytes
-        return try this.withUnsafeMutableBytes({
+        return try self.withUnsafeMutableBytes({
             let pointer = $0.baseAddress!.bindMemory(to: UInt8.self, capacity: $0.count)
             return try body(pointer, $0.count)
         })
@@ -82,14 +89,21 @@ public extension MutableContiguousBytes {
         self.withUnsafeMutableBytes({ this, thisCount in sodium_memzero(this, thisCount) })
     }
 }
-extension UnsafeMutableRawBufferPointer: MutableContiguousBytes, MutableDataProtocol {
+extension UnsafeMutableRawBufferPointer: MutableContiguousBytes {
+    public init(count: Int) {
+        self = UnsafeMutableRawBufferPointer.allocate(byteCount: count, alignment: 1)
+    }
     public init() {
-        self = UnsafeMutableRawBufferPointer.allocate(byteCount: 0, alignment: 1)
+        self.init(count: 0)
     }
     
     public mutating func withUnsafeMutableBytes<R>(_ body: (UnsafeMutableRawBufferPointer) throws -> R) rethrows -> R {
         try body(self)
     }
 }
-extension Array: MutableContiguousBytes where Element == UInt8 {}
+extension Array: MutableContiguousBytes where Element == UInt8 {
+    public init(count: Int) {
+        self.init(repeating: 0, count: count)
+    }
+}
 extension Data: MutableContiguousBytes {}

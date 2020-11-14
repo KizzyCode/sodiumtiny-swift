@@ -1,6 +1,6 @@
 import XCTest
 import SodiumMemory
-@testable import SodiumCore
+@testable import SodiumCrypto
 
 #if canImport(CryptoKit)
 import CryptoKit
@@ -28,8 +28,8 @@ final class HkdfSha512Tests: XCTestCase {
             let key = try SecureBytes(copying: test.key), hkdf = try HkdfSha512(baseKey: key)
             
             // Derive the key
-            let derived = try hkdf.derive(salt: test.salt, context: test.context, outputCount: test.derived.count)
-            XCTAssertEqual(Data(derived), test.derived)
+            let derived: Data = try hkdf.derive(salt: test.salt, context: test.context, outputCount: test.derived.count)
+            XCTAssertEqual(derived, test.derived)
         }
     }
 
@@ -45,13 +45,13 @@ final class HkdfSha512Tests: XCTestCase {
             // Test against
             for i in 0...16_384 {
                 // Generate a random salt and context
-                let salt = rng.generate(data: 16_384 - i), context = rng.generate(data: i)
+                let salt: Data = try rng.generate(count: 16_384 - i), context: Data = try rng.generate(count: i)
                 
                 // Compute the subkey using CryptoKit
-                let subkey = try HkdfSha512(baseKey: key).derive(salt: salt, context: context, outputCount: 32)
+                let subkey: Data = try HkdfSha512(baseKey: key).derive(salt: salt, context: context, outputCount: 32)
                 let cryptoKitSubkey = HKDF<SHA512>.deriveKey(inputKeyMaterial: cryptoKitKey, salt: salt,
                                                              info: context, outputByteCount: 32)
-                XCTAssertEqual([UInt8](subkey), cryptoKitSubkey.withUnsafeBytes({ [UInt8]($0) }))
+                XCTAssertEqual(subkey, cryptoKitSubkey.withUnsafeBytes({ Data($0) }))
             }
         } else {
             XCTFail("CryptoKit.HDKF is not available")

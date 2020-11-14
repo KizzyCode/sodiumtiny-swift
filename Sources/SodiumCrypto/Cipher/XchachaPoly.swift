@@ -13,12 +13,12 @@ public struct XchachaPoly {
         ... Int(crypto_aead_xchacha20poly1305_ietf_NPUBBYTES)
     
     /// The key
-    private let key: SecureBytes
+    private let key: ContiguousBytes
     
     /// Creates a new AEAD instance
     ///
     ///  - Parameter key: The key to use
-    public init(key: SecureBytes) throws {
+    public init(key: ContiguousBytes) throws {
         precondition(sodium_init() >= 0, "Failed to initialize libsodium")
         
         /// Validate the input
@@ -29,17 +29,19 @@ public struct XchachaPoly {
     /// Seals a message
     ///
     ///  - Parameters:
+    ///     - type: An optional type hint for the return type
     ///     - plaintext: The message to seal
     ///     - ad: The associated data to authenticate
     ///     - nonce: The nonce to use
     ///
     ///  - Returns: The sealed box
-    public func seal(plaintext: ContiguousBytes, ad: ContiguousBytes = [], nonce: ContiguousBytes) throws -> Data {
+    public func seal<R: MutableContiguousBytes>(_ type: R.Type = R.self, plaintext: ContiguousBytes,
+                                                ad: ContiguousBytes = [], nonce: ContiguousBytes) throws -> R {
         // Validate input
         try Self.nonceSize.validate(value: nonce.count)
         
         // Prepare vars
-        var output = Data(count: plaintext.count + Int(crypto_aead_xchacha20poly1305_IETF_ABYTES)),
+        var output = try R(count: plaintext.count + Int(crypto_aead_xchacha20poly1305_IETF_ABYTES)),
             outputCount: UInt64 = 0
         
         // Seal the message
@@ -65,18 +67,19 @@ public struct XchachaPoly {
     /// Opens a message
     ///
     ///  - Parameters:
+    ///     - type: An optional type hint for the return type
     ///     - ciphertext: The message to open
     ///     - ad: The associated data to authenticate
     ///     - nonce: The nonce to use
     ///
     ///  - Returns: The opened message
-    public func open(ciphertext: ContiguousBytes, ad: ContiguousBytes = [],
-                     nonce: ContiguousBytes) throws -> SecureBytes {
+    public func open<R: MutableContiguousBytes>(_ type: R.Type = R.self, ciphertext: ContiguousBytes,
+                                                ad: ContiguousBytes = [], nonce: ContiguousBytes) throws -> R {
         // Validate input
         try Self.nonceSize.validate(value: nonce.count)
         
         // Prepare vars
-        var output = try SecureBytes(zero: ciphertext.count),
+        var output = try R(count: ciphertext.count),
             outputCount: UInt64 = 0
         
         // Open the message
@@ -98,7 +101,7 @@ public struct XchachaPoly {
         })
         
         // Trim and return output
-        try output.resize(to: Int(exactly: outputCount)!)
+        output = try R(copying: output, count: Int(exactly: outputCount)!)
         return output
     }
 }

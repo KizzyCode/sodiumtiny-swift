@@ -1,5 +1,5 @@
 import XCTest
-import SodiumCore
+import SodiumCrypto
 @testable import SodiumMemory
 
 

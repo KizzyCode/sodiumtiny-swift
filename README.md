@@ -87,7 +87,7 @@ encouraged to build and include the framework yourself (don't forget to set `LIB
 > OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 ### 3rd-Party: XChaCha20-SIV
-[An XChaCha20-SIV implementation](https://github.com/jedisct1/libsodium-xchacha20-siv) in `/Sources/XChaChaSIV` based on
+[An XChaCha20-SIV implementation](https://github.com/jedisct1/libsodium-xchacha20-siv) in `/Sources/CXchachaSiv` based on
 revision [c4f6ee8](https://github.com/jedisct1/libsodium-xchacha20-siv/tree/c4f6ee85ac7fc633a81edcae8fc923f7690c1766).
 
 #### License

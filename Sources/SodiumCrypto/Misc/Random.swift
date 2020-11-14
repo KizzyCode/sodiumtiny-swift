@@ -25,25 +25,12 @@ public struct Random {
     
     /// Generates some data filled with cryptographically secure random bytes
     ///
-    ///  - Parameter count: The amount of random bytes to generate
-    public func generate(data count: Int) -> Data {
-        var data = Data(count: count)
-        self.generate(into: &data)
-        return data
-    }
-    /// Generates a byte array filled with cryptographically secure random bytes
-    ///
-    ///  - Parameter count: The amount of random bytes to generate
-    public func generate(byteArray count: Int) -> [UInt8] {
-        var array = [UInt8](repeating: 0, count: count)
-        self.generate(into: &array)
-        return array
-    }
-    /// Generates some secure bytes filled with cryptographically secure random bytes
-    ///
-    ///  - Parameter count: The amount of random bytes to generate
-    ///  - Returns: The cryptographically secure random bytes
-    public func generate(bytes count: Int) throws -> SecureBytes {
-        try SecureBytes(random: count)
+    ///  - Parameters:
+    ///     - type: An optional type hint for the return type
+    ///     - count: The amount of random bytes to generate
+    public func generate<R: MutableContiguousBytes>(_ type: R.Type = R.self, count: Int) throws -> R {
+        var bytes = try R(count: count)
+        self.generate(into: &bytes)
+        return bytes
     }
 }

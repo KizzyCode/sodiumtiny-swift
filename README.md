@@ -1,18 +1,19 @@
-# SodiumCrypto
+# SodiumTiny
 
-Implements some cryptographic building blocks over libsodium.
+Implements some cryptographic building blocks over libsodium. A minimalistic variant of 
+[SodiumCrypto](https://github.com/KizzyCode/sodiumcrypto-swift).
 
 ## Implemented APIs
- - `SecureBytes` and `MutableSecureBytes`
- - `XchachaPoly`
- - `XchachaPolySIV`
- - `HdkfSha512`
+ - `SecureBytes` (a securely erasing data type)
+ - `XchachaSiv` (an XChaCha20+Blake2b based SIV construction)
+ - `Padding` (ISO/IEC 7816-4)
+ - `Random` (cryptographically secure random data generation)
  
  
 ## License
 All code that is not 3rd-party code is published under both the MIT or the BSD-2-Clause license - choose as you wish.
 
-### SodiumCrypto
+### SodiumTiny
 
 #### MIT License
 > MIT License
@@ -64,8 +65,8 @@ All code that is not 3rd-party code is published under both the MIT or the BSD-2
 
 ### 3rd-Party: Libsodium
 [The famous libsodium library](https://github.com/jedisct1/libsodium) as prebuild framework `/Clibsodium.xcframework` based on
-revision [53cdaa4](https://github.com/jedisct1/libsodium/tree/53cdaa4f514ae7dcbab0c2e248b932f506ad9e12). However you're
-encouraged to build and include the framework yourself (don't forget to set `LIBSODIUM_FULL_BUILD=true` because we need
+revision [9e2f4d0](https://github.com/jedisct1/libsodium/tree/9e2f4d0ba89b60a680d506c06bfb0a833abc2ff0). However of course you're
+free to build the framework yourself (don't forget to set `LIBSODIUM_FULL_BUILD=true` because we need 
 `crypto_stream_xchacha20_xor`).
 
 #### License

@@ -3,17 +3,11 @@
 import PackageDescription
 
 let package = Package(
-    name: "SodiumCrypto",
+    name: "SodiumTiny",
     products: [
         .library(
-            name: "SodiumMemory",
-            targets: ["SodiumMemory"]),
-        .library(
-            name: "SodiumCrypto",
-            targets: ["SodiumCrypto"]),
-        .library(
-            name: "SodiumCombine",
-            targets: ["SodiumCombine"])
+            name: "SodiumTiny",
+            targets: ["SodiumTiny"])
     ],
     dependencies: [],
     targets: [
@@ -26,27 +20,13 @@ let package = Package(
             cSettings: [.headerSearchPath("Clibsodium")]),
         
         .target(
-            name: "SodiumMemory",
-            dependencies: ["Clibsodium"]),
-        .target(
-            name: "SodiumCrypto",
-            dependencies: ["Clibsodium", "CXchachaSiv", "SodiumMemory"]),
-        .target(
-            name: "SodiumCombine",
-            dependencies: ["SodiumCrypto"]),
+            name: "SodiumTiny",
+            dependencies: ["Clibsodium", "CXchachaSiv"]),
         
         .testTarget(
-            name: "SodiumCryptoTests",
-            dependencies: ["SodiumCrypto", "SodiumMemory"],
+            name: "SodiumTinyTests",
+            dependencies: ["SodiumTiny"],
             resources: [
-                .process("Kdf/HkdfSha512.json"),
-                .process("Misc/Padding.json"),
-                .process("Cipher/XchachaPoly.json")]),
-        .testTarget(
-            name: "SodiumMemoryTests",
-            dependencies: ["SodiumCrypto", "SodiumMemory"]),
-        .testTarget(
-            name: "SodiumCombineTests",
-            dependencies: ["SodiumCrypto", "SodiumMemory", "SodiumCombine"])
+                .process("Padding.json")])
     ]
 )

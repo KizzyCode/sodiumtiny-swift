@@ -25,8 +25,6 @@ let package = Package(
         
         .testTarget(
             name: "SodiumTinyTests",
-            dependencies: ["SodiumTiny"],
-            resources: [
-                .process("Padding.json")])
+            dependencies: ["SodiumTiny"])
     ]
 )

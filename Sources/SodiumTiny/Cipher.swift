@@ -13,7 +13,7 @@ public struct XchachaSiv {
     /// The key
     private let key: ContiguousBytes
     
-    /// Creates a new AEAD instance
+    /// Creates a new `XchachaSiv` instance
     ///
     ///  - Parameter key: The key to use
     public init(key: ContiguousBytes) throws {

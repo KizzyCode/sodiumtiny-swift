@@ -1,13 +1,13 @@
 # SodiumTiny
 
-Implements some cryptographic building blocks over libsodium. A minimalistic variant of 
-[SodiumCrypto](https://github.com/KizzyCode/sodiumcrypto-swift).
+Implements a some core cryptographic building blocks over libsodium.
 
 ## Implemented APIs
- - `SecureBytes` (a securely erasing data type)
- - `XchachaSiv` (an XChaCha20+Blake2b based SIV construction)
+ - `Hash` (Blake2b)
  - `Padding` (ISO/IEC 7816-4)
  - `Random` (cryptographically secure random data generation)
+ - `SecureBytes` (a securely erasing data type)
+ - `XchachaSiv` (an XChaCha20+Blake2b based SIV construction)
  
  
 ## License
